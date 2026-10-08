@@ -275,7 +275,7 @@ SCENES.forEach((s, i) => {
     el.querySelector('.main').style.objectPosition = s.focal;
   } else if (s.type === 'video') {
     el.classList.add('photo');
-    el.innerHTML = `<video class="main" data-src="media/${s.src}.mp4" muted playsinline preload="none"></video>`;
+    el.innerHTML = `<video class="main" data-src="media/${s.src}.mp4?v=3" muted playsinline preload="none"></video>`;
   } else if (s.type === 'cards' || s.type === 'prints') {
     const n = s.imgs.length;
     el.innerHTML = img(s.imgs[0], 'blurbg') +

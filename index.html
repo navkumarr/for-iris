@@ -327,14 +327,15 @@ let curScene = -1, curLine = -2;
 function setScene(i, t) {
   if (i === curScene) return;
   const prev = SCENES[curScene];
-  if (prev) { prev.el.classList.remove('on'); const v = prev.el.querySelector('video'); if (v) { vol(v, 0); setTimeout(() => { if (!v.closest('.on')) v.pause(); }, 1300); } }
+  if (prev) { prev.el.classList.remove('on'); const v = prev.el.querySelector('video'); if (v) { setTimeout(() => { if (!v.closest('.on')) v.pause(); }, 1300); } }
   curScene = i;
   const s = SCENES[i];
   for (let k = i; k < i + 4; k++) load(k);
   s.el.classList.add('on');
   document.body.classList.toggle('centered', s.type === 'line');
   const v = s.el.querySelector('video');
-  if (v) { try { v.currentTime = Math.max(0, t - s.at); } catch (e) {} vol(v, VIDEO_VOL); if (!audio.paused) v.play().catch(() => {}); }
+  if (v) { try { v.currentTime = Math.max(0, t - s.at); } catch (e) {} if (!audio.paused) v.play().catch(() => {}); }
+  syncClip();
 }
 function tick() {
   const t = audio.currentTime;
@@ -358,18 +359,35 @@ function tick() {
 }
 const fmt = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
 
-// Video sound: routed through Web Audio so the volume works on iPhones too, faded in and out with the scene
-function vol(v, x) { if (v._g && actx) v._g.gain.setTargetAtTime(x, actx.currentTime, 0.35); else v.volume = x; }
+// Video sound: the videos themselves stay muted (on iPhones, a second media element making sound pauses the letter).
+// Their sound plays from a decoded copy through Web Audio instead, quietly under the voice.
+const clipBuf = {}; let clipNode = null;
 function unlockVideos() {
   if (actx !== undefined) return;
-  try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { actx = null; }
-  document.querySelectorAll('video').forEach(v => {
-    if (!v.getAttribute('src')) { v.src = v.dataset.src; v.preload = 'auto'; }
-    v.muted = false;
-    if (actx) { const g = actx.createGain(); g.gain.value = 0; actx.createMediaElementSource(v).connect(g).connect(actx.destination); v._g = g; } else v.volume = 0;
-    const p = v.play(); if (p) p.then(() => { if (!v.closest('.on')) v.pause(); }).catch(() => {});
-  });
-  if (actx) actx.resume();
+  try { actx = new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch (e) { actx = null; return; }
+  const n = actx.createBufferSource(); n.buffer = actx.createBuffer(1, 1, 22050); n.connect(actx.destination); n.start(0);
+  SCENES.filter(s => s.type === 'video').forEach(s =>
+    fetch(`media/${s.src}-audio.m4a`).then(r => r.arrayBuffer())
+      .then(a => new Promise((ok, no) => actx.decodeAudioData(a, ok, no)))
+      .then(buf => { clipBuf[s.src] = buf; syncClip(); }).catch(() => {}));
+}
+function stopClip() {
+  if (!clipNode) return;
+  const { src, g } = clipNode; clipNode = null;
+  g.gain.setTargetAtTime(0, actx.currentTime, 0.3);
+  try { src.stop(actx.currentTime + 1.5); } catch (e) {}
+}
+function syncClip() {
+  const s = SCENES[curScene];
+  if (!(s && s.type === 'video' && !audio.paused && actx && clipBuf[s.src])) return stopClip();
+  const off = Math.max(0, audio.currentTime - s.at);
+  if (clipNode && clipNode.key === s.src && Math.abs(actx.currentTime - clipNode.t0 - off) < 0.3) return;
+  stopClip();
+  if (off >= clipBuf[s.src].duration) return;
+  const src = actx.createBufferSource(), g = actx.createGain();
+  src.buffer = clipBuf[s.src]; g.gain.value = 0; src.connect(g).connect(actx.destination);
+  src.start(0, off); g.gain.setTargetAtTime(VIDEO_VOL, actx.currentTime, 0.3);
+  clipNode = { src, g, key: s.src, t0: actx.currentTime - off };
 }
 
 // Controls
@@ -385,9 +403,9 @@ function start() {
 }
 $('#play').onclick = start;
 $('#again').onclick = () => { curScene = -1; curLine = -2; SCENES.forEach(s => s.el.classList.remove('on')); start(); };
-audio.addEventListener('play', () => { clearTimeout(endT); $('#end').classList.remove('on'); document.body.classList.add('playing'); setIcon(); requestAnimationFrame(tick); const v = SCENES[curScene] && SCENES[curScene].el.querySelector('video'); if (v) v.play().catch(() => {}); });
-audio.addEventListener('pause', () => { setIcon(); document.querySelectorAll('video').forEach(v => v.pause()); });
-audio.addEventListener('seeked', () => { if (audio.currentTime < (audio.duration || 104) - 1) { clearTimeout(endT); $('#end').classList.remove('on'); } curLine = -2; tick(); const s = SCENES[curScene], v = s && s.el.querySelector('video'); if (v) v.currentTime = Math.max(0, audio.currentTime - s.at); });
+audio.addEventListener('play', () => { clearTimeout(endT); $('#end').classList.remove('on'); document.body.classList.add('playing'); setIcon(); if (actx) actx.resume(); syncClip(); requestAnimationFrame(tick); const v = SCENES[curScene] && SCENES[curScene].el.querySelector('video'); if (v) v.play().catch(() => {}); });
+audio.addEventListener('pause', () => { setIcon(); syncClip(); document.querySelectorAll('video').forEach(v => v.pause()); });
+audio.addEventListener('seeked', () => { if (audio.currentTime < (audio.duration || 104) - 1) { clearTimeout(endT); $('#end').classList.remove('on'); } curLine = -2; tick(); const s = SCENES[curScene], v = s && s.el.querySelector('video'); if (v) v.currentTime = Math.max(0, audio.currentTime - s.at); syncClip(); });
 let endT;
 audio.addEventListener('ended', () => { endT = setTimeout(() => { $('#end').classList.add('on'); document.body.classList.remove('playing'); }, 1200); });
 function setIcon() { const p = audio.paused; $('#ico-pause').style.display = p ? 'none' : ''; $('#ico-play').style.display = p ? '' : 'none'; $('#pp').setAttribute('aria-label', p ? 'Play' : 'Pause'); poke(); }

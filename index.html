@@ -275,7 +275,7 @@ SCENES.forEach((s, i) => {
     el.querySelector('.main').style.objectPosition = s.focal;
   } else if (s.type === 'video') {
     el.classList.add('photo');
-    el.innerHTML = `<video class="main" data-src="media/${s.src}.mp4?v=3" muted playsinline preload="none"></video>`;
+    el.innerHTML = `<video class="main" data-src="media/${s.src}.mp4?v=4" muted playsinline preload="none"></video>`;
   } else if (s.type === 'cards' || s.type === 'prints') {
     const n = s.imgs.length;
     el.innerHTML = img(s.imgs[0], 'blurbg') +
@@ -305,9 +305,18 @@ addEventListener('resize', () => SCENES.forEach(fit));
 function load(i) {
   const s = SCENES[i]; if (!s || s.loaded) return;
   s.loaded = true;
-  s.el.querySelectorAll('[data-src]').forEach(m => { if (m.getAttribute('src')) return; m.src = m.dataset.src; if (m.tagName === 'VIDEO') m.load(); });
+  s.el.querySelectorAll('[data-src]').forEach(m => { if (m.getAttribute('src') || m.tagName === 'VIDEO') return; m.src = m.dataset.src; if (m.tagName === 'VIDEO') m.load(); });
 }
 for (let i = 0; i < 4; i++) load(i);
+
+// Download each video completely up front so it can't stall mid-scene on a slow phone connection
+SCENES.filter(s => s.type === 'video').forEach(s => {
+  const v = s.el.querySelector('video');
+  fetch(v.dataset.src).then(r => r.blob()).then(b => {
+    v.src = URL.createObjectURL(b); v.preload = 'auto'; v.load();
+    if (s.el.classList.contains('on') && !audio.paused) { v.currentTime = Math.max(0, audio.currentTime - s.at); v.play().catch(() => {}); }
+  }).catch(() => { if (!v.getAttribute('src')) v.src = v.dataset.src; });
+});
 
 // Captions
 function renderLine(li) {
@@ -369,7 +378,7 @@ const clipBuf = {}; let clipNode = null;
 function blessVideos() {
   document.querySelectorAll('video').forEach(v => {
     v.muted = true;
-    if (!v.getAttribute('src')) { v.src = v.dataset.src; v.preload = 'auto'; }
+    if (!v.getAttribute('src')) return;
     const p = v.play(); if (p) p.then(() => { if (!v.closest('.on')) v.pause(); }).catch(() => {});
   });
 }

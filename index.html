@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>For my Iris</title>
+<meta name="theme-color" content="#15100f">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Karla:wght@400;500;600&family=Caveat:wght@500&display=swap">
+<style>
+:root{
+  --paper:#f6efe6;--paper-deep:#ecdfcf;--rule:#d9c6b3;--ink:#2a1d1a;--ink-muted:#6b5650;
+  --rose:#b4485a;--on-rose:#fff8f2;--blush:#e8b4b8;--wine:#5a1f2b;--gold:#c9a46a;
+  --scrim:rgba(21,16,15,.55);--on-photo:#fbf5ee;
+  --night:#15100f;--night-deep:#221917;--night-rose:#e07a8a;
+  --iris-deep:#3d2368;--iris:#6a48b0;--iris-light:#b8a2ea;
+  --space-1:8px;--space-2:16px;--space-3:32px;--space-4:64px;
+  --radius-sm:2px;--radius-md:12px;--radius-pill:999px;
+  --serif:"Cormorant Garamond",Georgia,serif;--sans:Karla,system-ui,sans-serif;--hand:Caveat,"Segoe Script",cursive;
+  --gutter:var(--space-4);
+  --fade:1.2s;
+}
+@media (max-width:600px){:root{--gutter:var(--space-2)}}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--night);color:var(--on-photo);overflow:hidden;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--sans)}
+button{font:inherit;color:inherit;cursor:pointer}
+
+/* ---------- Start screen ---------- */
+#start{position:fixed;inset:0;z-index:30;background:var(--paper);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--space-3);text-align:center;padding:var(--gutter);transition:opacity 1.4s ease}
+#start.gone{opacity:0;pointer-events:none}
+.label{font:600 12px/16px var(--sans);letter-spacing:.14em;text-transform:uppercase}
+#start .label{color:var(--ink-muted)}
+#start h1{margin:0;font:italic 500 clamp(44px,9vw,72px)/.95 var(--serif)}
+.rule{width:48px;height:1px;background:var(--rule)}
+#play{width:72px;height:72px;border:0;border-radius:var(--radius-pill);background:var(--rose);display:grid;place-items:center;transition:transform .3s ease}
+#play:hover{transform:scale(1.05)}
+#play svg{fill:var(--on-rose);margin-left:4px}
+#start .hand{font:500 24px/1.15 var(--hand);color:var(--ink-muted)}
+#start .hint{font-size:13px;color:var(--ink-muted);opacity:.8}
+
+/* ---------- Stage & scenes ---------- */
+#stage{position:fixed;inset:0;overflow:hidden;background:var(--night)}
+.scene{position:absolute;inset:0;opacity:0;will-change:opacity;visibility:hidden;transition:opacity var(--fade) ease-in-out,visibility 0s linear var(--fade)}
+.scene.on{opacity:1;visibility:visible;transition:opacity var(--fade) ease-in-out,visibility 0s}
+
+/* PhotoScene: full-bleed with slow pan & zoom */
+.photo img,.photo video,.bloom .bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+/* A photo whose shape doesn't match the screen (e.g. vertical photo on a laptop) is shown whole, over a blurred copy of itself */
+.photo .blurbg{display:none;inset:-60px;width:calc(100% + 120px);height:calc(100% + 120px)}
+.photo.fit .blurbg{display:block}
+.photo.fit .main{object-fit:contain}
+.photo img{transform-origin:var(--focal,50% 40%);will-change:transform;backface-visibility:hidden}
+.scene.on.photo img.main{animation:kenburns var(--dur,6s) linear forwards}
+@keyframes kenburns{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(0,0,0) scale(1.08)}}
+
+/* Card: a screenshot shown whole over a blurred copy of itself */
+.blurbg{position:absolute;inset:-60px;width:calc(100% + 120px);height:calc(100% + 120px);object-fit:cover;filter:blur(40px) brightness(.35) saturate(1.2);will-change:transform;transform:translateZ(0)}
+.cards{position:absolute;left:var(--gutter);right:var(--gutter);top:max(5dvh,var(--space-2));bottom:26dvh;display:flex;align-items:center;justify-content:center;gap:var(--space-3)}
+.cards figure{margin:0;flex:0 1 auto;min-width:0;display:flex;flex-direction:column;opacity:0;transform:translateY(16px) scale(.97) rotate(var(--tilt,0deg));transition:opacity .9s ease,transform 1.1s cubic-bezier(.2,.7,.2,1);will-change:transform,opacity;backface-visibility:hidden}
+.scene.on .cards figure{opacity:1;transform:rotate(var(--tilt,0deg))}
+.cards img{display:block;max-width:100%;max-height:var(--mh,64dvh);width:auto;height:auto;object-fit:contain;border-radius:var(--radius-md);box-shadow:0 18px 50px rgba(0,0,0,.55)}
+.cards.n2{--mh:60dvh}.cards.n3{--mh:52dvh}
+.cards.n2 figure,.cards.n3 figure{max-width:calc((100% - var(--space-3)*2)/var(--n))}
+/* Prints (polaroid frames) */
+.cards.prints figure{background:var(--paper-deep);padding:10px 10px 0;border-radius:var(--radius-sm);box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.cards.prints img{border-radius:var(--radius-sm);box-shadow:none;max-height:calc(var(--mh) - 56px)}
+.cards.prints figcaption{color:var(--ink);display:flex;align-items:center;justify-content:center;gap:var(--space-1);height:46px}
+.cards.prints figcaption .label{color:var(--ink-muted);font-size:14px}
+.cards.prints figcaption b{width:6px;height:6px;border-radius:var(--radius-pill);background:var(--gold)}
+@media (orientation:portrait){
+  .cards{flex-direction:column;gap:0}
+  .cards figure{max-width:100% !important}
+  .cards.n2{--mh:33dvh}.cards.n3{--mh:24dvh}
+  .cards.n2 figure+figure,.cards.n3 figure+figure{margin-top:-2dvh}
+  .cards.n2 figure:nth-child(1){align-self:flex-start;margin-left:6%}
+  .cards.n2 figure:nth-child(2){align-self:flex-end;margin-right:6%}
+}
+
+/* Line scene: just the words */
+.line{background:var(--night)}
+
+/* Sun breaking through clouds (Image 15) */
+.sun{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.sun .glow{position:absolute;right:-20vmax;top:-20vmax;width:80vmax;height:80vmax;border-radius:50%;background:radial-gradient(circle,rgba(255,236,190,.95) 0%,rgba(255,214,150,.45) 22%,rgba(255,200,140,0) 60%);opacity:0;will-change:opacity}
+.sun .rays{position:absolute;right:-60vmax;top:-60vmax;width:140vmax;height:140vmax;background:repeating-conic-gradient(from 0deg,rgba(255,240,205,.22) 0deg 4deg,rgba(255,240,205,0) 4deg 13deg);-webkit-mask:radial-gradient(circle,#000 0%,rgba(0,0,0,.6) 25%,transparent 55%);mask:radial-gradient(circle,#000 0%,rgba(0,0,0,.6) 25%,transparent 55%);opacity:0;will-change:opacity}
+.sun .cloud{position:absolute;border-radius:50%;background:radial-gradient(closest-side,rgba(250,250,252,.95),rgba(250,250,252,.8) 55%,rgba(250,250,252,0));will-change:transform,opacity}
+.sun .c1{width:70vmax;height:34vmax;right:-14vmax;top:-10vmax}
+.sun .c2{width:56vmax;height:30vmax;right:20vmax;top:-12vmax}
+.sun .c3{width:60vmax;height:26vmax;right:-24vmax;top:14vmax}
+.scene.on .sun .glow{animation:glow 3.2s ease-out .8s forwards}
+.scene.on .sun .rays{animation:rays 3.5s ease-out 1.2s forwards}
+.scene.on .sun .c1{animation:drift1 4.5s cubic-bezier(.4,0,.2,1) .3s forwards}
+.scene.on .sun .c2{animation:drift2 4.5s cubic-bezier(.4,0,.2,1) .3s forwards}
+.scene.on .sun .c3{animation:drift3 4.5s cubic-bezier(.4,0,.2,1) .3s forwards}
+@keyframes glow{to{opacity:1}}
+@keyframes rays{to{opacity:1}}
+@keyframes drift1{to{transform:translate3d(30vmax,-20vmax,0);opacity:0}}
+@keyframes drift2{to{transform:translate3d(-40vmax,-14vmax,0);opacity:0}}
+@keyframes drift3{to{transform:translate3d(30vmax,24vmax,0);opacity:0}}
+
+/* Iris bloom over Image 22 */
+.bloom .bg{transform:translate3d(0,0,0) scale(1.06);transition:transform 18s linear;will-change:transform}
+.scene.on.bloom .bg{transform:translate3d(0,0,0) scale(1)}
+.bloom .dim{position:absolute;inset:0;background:#000;opacity:.6;transition:opacity 6s ease 3s;will-change:opacity}
+.scene.on.bloom .dim{opacity:.28}
+.flower{position:absolute;left:50%;top:38%;width:min(86vw,58dvh);aspect-ratio:1;transform:translate(-50%,-50%);filter:drop-shadow(0 12px 40px rgba(30,10,60,.5))}
+.flower svg{width:100%;height:100%;overflow:visible}
+.flower .p{transform-box:view-box;transform-origin:0 0;opacity:0;transform:scale(.1) rotate(-25deg)}
+.flower .leaf{transform-origin:2px 210px}
+.flower .stem{stroke-dasharray:400;stroke-dashoffset:400}
+.flower .heart{opacity:0}
+.scene.on .flower .stem{animation:stem 1.6s ease-out .4s forwards}
+.scene.on .flower .p{animation:petal 2.6s cubic-bezier(.2,.8,.2,1) forwards}
+.scene.on .flower .heart{animation:fadein 1.5s ease 3.4s forwards}
+.scene.on .flower{animation:sway 7s ease-in-out 4.5s infinite alternate}
+@keyframes stem{to{stroke-dashoffset:0}}
+@keyframes petal{to{opacity:1;transform:scale(1) rotate(0)}}
+@keyframes fadein{to{opacity:1}}
+@keyframes sway{from{transform:translate(-50%,-50%) rotate(-1.5deg)}to{transform:translate(-50%,-50%) rotate(1.5deg)}}
+
+/* ---------- Captions: the letter, word by word ---------- */
+#scrim{position:fixed;left:0;right:0;bottom:0;height:46dvh;background:linear-gradient(to top,rgba(21,16,15,.88),rgba(21,16,15,.55) 45%,rgba(21,16,15,0));pointer-events:none;transition:opacity var(--fade) ease;z-index:5}
+#caption{position:fixed;left:var(--gutter);right:var(--gutter);bottom:calc(env(safe-area-inset-bottom) + 96px);z-index:6;text-align:center;pointer-events:none;transition:bottom var(--fade) ease,transform var(--fade) ease}
+#caption p{margin:0 auto;max-width:24em;font:italic 400 clamp(21px,2.6vw,32px)/1.3 var(--serif);color:var(--on-photo);text-shadow:0 1px 10px rgba(0,0,0,.4);transition:opacity .7s ease}
+#caption p.out{opacity:0}
+#caption span{opacity:0;display:inline-block;transform:translate3d(0,6px,0);transition:opacity .6s ease,transform .8s cubic-bezier(.2,.7,.2,1);will-change:transform,opacity}
+#caption span.in{opacity:1;transform:translate3d(0,0,0)}
+#caption em{font-style:italic;color:var(--night-rose)}
+body.centered #scrim{opacity:0}
+body.centered #caption{bottom:50%;transform:translateY(50%)}
+body.centered #caption p{font-size:clamp(28px,4.4vw,52px);max-width:16em;line-height:1.2}
+
+/* ---------- Player bar ---------- */
+#bar{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + var(--space-2));transform:translateX(-50%);width:calc(100% - var(--space-2)*2);max-width:480px;z-index:10;display:flex;align-items:center;gap:var(--space-2);background:rgba(34,25,23,.92);border-radius:var(--radius-md);padding:var(--space-1) var(--space-2) var(--space-1) var(--space-1);transition:opacity .6s ease;opacity:0;pointer-events:none}
+body.playing #bar{opacity:1;pointer-events:auto}
+body.playing.idle #bar{opacity:0;pointer-events:none}
+#pp{flex:none;width:40px;height:40px;border:0;border-radius:var(--radius-pill);background:var(--night-rose);display:grid;place-items:center}
+#pp svg{fill:#2a1014}
+#track{flex:1;height:24px;position:relative;cursor:pointer;touch-action:none}
+#track::before{content:"";position:absolute;left:0;right:0;top:50%;height:3px;margin-top:-1.5px;border-radius:var(--radius-pill);background:#4a2a2e}
+#fill{position:absolute;left:0;top:50%;height:3px;margin-top:-1.5px;width:0;border-radius:var(--radius-pill);background:var(--night-rose)}
+#knob{position:absolute;top:50%;left:0;width:11px;height:11px;margin:-5.5px;border-radius:var(--radius-pill);background:var(--night-rose)}
+#time{font:600 12px/16px var(--sans);letter-spacing:.08em;color:#b9a69c;font-variant-numeric:tabular-nums;min-width:76px;text-align:right}
+
+/* ---------- End card & letter ---------- */
+#end{position:fixed;inset:0;z-index:20;background:var(--wine);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--space-3);text-align:center;padding:var(--gutter);opacity:0;pointer-events:none;transition:opacity 2s ease}
+#end.on{opacity:1;pointer-events:auto}
+#end h2{margin:0;font:italic 500 clamp(44px,8vw,72px)/.95 var(--serif)}
+#end .hand{font:500 26px/1.15 var(--hand);opacity:.9}
+#end .actions{display:flex;gap:var(--space-2);align-items:center;opacity:0;transition:opacity 1.5s ease 2.5s}
+#end.on .actions{opacity:1}
+.btn{border:1px solid var(--on-photo);background:none;border-radius:var(--radius-pill);padding:12px 20px;color:var(--on-photo)}
+.lnk{border:0;background:none;color:var(--on-photo);text-decoration:underline;text-underline-offset:4px;padding:12px 8px}
+#letter{position:fixed;inset:0;z-index:25;background:var(--paper);color:var(--ink);overflow-y:auto;opacity:0;pointer-events:none;transition:opacity .8s ease}
+#letter.on{opacity:1;pointer-events:auto}
+#letter article{max-width:34em;margin:0 auto;padding:var(--space-4) var(--gutter) var(--space-4)}
+#letter .label{color:var(--ink-muted)}
+#letter h2{font:italic 500 40px/1 var(--serif);margin:var(--space-2) 0 var(--space-3)}
+#letter p{font:400 22px/1.5 var(--serif);margin:0 0 1em}
+#letter .close{color:var(--ink);border-color:var(--ink);margin-top:var(--space-3)}
+
+@media (prefers-reduced-motion:reduce){
+  .scene.on.photo img.main,.scene.on .flower{animation:none}
+  .bloom .bg{transition:none}
+}
+</style>
+</head>
+<body>
+
+<section id="start">
+  <h1>For my Iris</h1>
+  <div class="rule"></div>
+  <button id="play" aria-label="Play the letter"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg></button>
+</section>
+
+<main id="stage" aria-live="off"></main>
+<div id="scrim"></div>
+<div id="caption" aria-live="polite"><p></p></div>
+
+<div id="bar">
+  <button id="pp" aria-label="Pause"><svg width="16" height="16" viewBox="0 0 16 16"><g id="ico-pause"><rect x="3" y="2" width="3.5" height="12" rx="1"/><rect x="9.5" y="2" width="3.5" height="12" rx="1"/></g><path id="ico-play" d="M4 2l10 6-10 6z" style="display:none"/></svg></button>
+  <div id="track" role="slider" aria-label="Seek" tabindex="0"><div id="fill"></div><div id="knob"></div></div>
+  <span id="time">0:00 / 1:44</span>
+</div>
+
+<section id="end" aria-hidden="true">
+  <h2>I love you, Iris.</h2>
+  <span class="hand">from nav</span>
+  <div class="actions"><button class="btn label" id="again">Play again</button><button class="lnk label" id="read">Read the letter</button></div>
+</section>
+
+<section id="letter" aria-hidden="true"><article>
+  <span class="label">The letter</span>
+  <h2>For my Iris</h2>
+  <div id="letter-text"></div>
+  <button class="btn label close" id="close">Close</button>
+</article></section>
+
+<audio id="audio" src="media/letter.m4a" preload="auto" playsinline></audio>
+
+<!-- Iris flower, reused by the bloom scene -->
+<template id="iris-svg">
+<svg viewBox="-150 -170 300 380" aria-hidden="true">
+  <defs>
+    <linearGradient id="gFall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c1650"/><stop offset=".45" stop-color="#5a3a9e"/><stop offset="1" stop-color="#8a6fd0"/></linearGradient>
+    <linearGradient id="gStd" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#4b2c86"/><stop offset=".6" stop-color="#8d73d6"/><stop offset="1" stop-color="#c8b8f2"/></linearGradient>
+    <linearGradient id="gBeard" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3d27a"/><stop offset="1" stop-color="#e2a63c" stop-opacity="0"/></linearGradient>
+  </defs>
+  <path class="stem" d="M0 30 C 4 90 -6 150 2 210" stroke="#4f7a43" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <path class="p leaf" style="animation-delay:1.2s" d="M2 210 C 30 170 60 140 70 100 C 40 130 20 160 2 205Z" fill="#5d8a4e"/>
+  <!-- standards (upright) -->
+  <g class="p std" style="animation-delay:1.9s"><path d="M0 0 C -40 -40 -46 -110 -6 -150 C 2 -158 10 -150 14 -140 C 40 -100 34 -40 0 0Z" fill="url(#gStd)"/></g>
+  <g class="p std" style="animation-delay:1.6s"><path transform="rotate(-38)" d="M0 0 C -30 -40 -36 -100 -2 -132 C 6 -138 12 -130 14 -122 C 34 -90 28 -36 0 0Z" fill="url(#gStd)" opacity=".92"/></g>
+  <g class="p std" style="animation-delay:1.75s"><path transform="rotate(38)" d="M0 0 C -28 -36 -34 -90 -14 -122 C -8 -130 0 -136 4 -128 C 34 -98 30 -40 0 0Z" fill="url(#gStd)" opacity=".92"/></g>
+  <!-- falls (drooping) -->
+  <g class="p fall" style="animation-delay:2.2s"><path transform="rotate(-62)" d="M0 0 C -46 18 -62 80 -40 126 C -26 150 26 150 40 126 C 62 80 46 18 0 0Z" fill="url(#gFall)"/><path transform="rotate(-62)" d="M0 8 C -6 40 -4 70 0 92 C 4 70 6 40 0 8Z" fill="url(#gBeard)"/></g>
+  <g class="p fall" style="animation-delay:2.35s"><path transform="rotate(62)" d="M0 0 C -46 18 -62 80 -40 126 C -26 150 26 150 40 126 C 62 80 46 18 0 0Z" fill="url(#gFall)"/><path transform="rotate(62)" d="M0 8 C -6 40 -4 70 0 92 C 4 70 6 40 0 8Z" fill="url(#gBeard)"/></g>
+  <g class="p fall" style="animation-delay:2.5s"><path d="M0 4 C -40 20 -52 74 -34 112 C -22 132 22 132 34 112 C 52 74 40 20 0 4Z" fill="url(#gFall)"/><path d="M0 10 C -6 38 -4 62 0 82 C 4 62 6 38 0 10Z" fill="url(#gBeard)"/></g>
+  <circle class="heart" r="9" fill="#f3d27a"/>
+</svg>
+</template>
+
+<script>
+// ---- Timeline: when each scene starts (seconds into the recording) ----
+const SCENES = [
+  {at: 0,     type: 'line'},
+  {at: 3.1,   type: 'cards', imgs: ['img-0']},
+  {at: 8.0,   type: 'cards', imgs: ['img-1', 'img-2', 'img-3'], tilts: [-2, 1.5, -1]},
+  {at: 11.2,  type: 'photo', img: 'img-7',  focal: '50% 30%'},
+  {at: 13.7,  type: 'photo', img: 'img-8',  focal: '50% 35%'},
+  {at: 19.1,  type: 'cards', imgs: ['img-9']},
+  {at: 24.1,  type: 'cards', imgs: ['img-10']},
+  {at: 27.2,  type: 'cards', imgs: ['img-11a']},
+  {at: 28.85, type: 'photo', img: 'img-11b', focal: '50% 50%'},
+  {at: 31.2,  type: 'video', src: 'video-1'},
+  {at: 35.1,  type: 'line', em: ['easiest']},
+  {at: 39.5,  type: 'cards', imgs: ['img-12']},
+  {at: 41.75, type: 'cards', imgs: ['img-13']},
+  {at: 43.7,  type: 'photo', img: 'img-14', focal: '50% 45%'},
+  {at: 49.1,  type: 'photo', img: 'img-15', focal: '60% 50%', sun: true},
+  {at: 54.3,  type: 'video', src: 'video-2'},
+  {at: 58.8,  type: 'prints', imgs: ['img-16', 'img-17'], tilts: [-3, 2.5]},
+  {at: 60.6,  type: 'photo', img: 'img-18', focal: '50% 35%'},
+  {at: 64.2,  type: 'photo', img: 'img-19', focal: '50% 50%'},
+  {at: 66.9,  type: 'photo', img: 'img-20', focal: '50% 35%'},
+  {at: 70.9,  type: 'line'},
+  {at: 73.5,  type: 'photo', img: 'img-21', focal: '50% 30%'},
+  {at: 77.2,  type: 'bloom', img: 'img-22'},
+  {at: 96.3,  type: 'prints', imgs: ['img-22', 'img-23'], dates: ['August 29', 'September 3'], tilts: [-2.5, 2]},
+  {at: 102.3, type: 'line', em: ['love']},
+];
+// ---- The letter, word by word, timed to the recording ----
+const LINES = [{"t":0.62,"w":[[0.62,"Here's"],[1.0,"how"],[1.12,"to"],[1.24,"write"],[1.42,"a"],[1.7,"love"],[1.86,"letter."]]},{"t":3.38,"w":[[3.38,"The"],[3.64,"biggest"],[3.86,"mistake"],[4.22,"you'll"],[4.48,"make"],[4.6,"when"],[4.76,"writing"],[4.94,"it"],[5.2,"is"],[5.42,"framing"],[5.68,"everything"],[6.1,"in"],[6.28,"relation"],[6.46,"to"],[6.78,"yourself."]]},{"t":8.32,"w":[[8.32,"Of"],[8.44,"course,"],[9.14,"you"],[9.26,"should"],[9.4,"tell"],[9.56,"her"],[9.68,"about"],[9.86,"how"],[10.06,"much"],[10.18,"she"],[10.34,"means"],[10.5,"to"],[10.74,"you,"]]},{"t":11.4,"w":[[11.4,"how"],[11.76,"you"],[11.86,"think"],[12.04,"about"],[12.28,"her"],[12.42,"after"],[12.6,"a"],[12.8,"long"],[12.96,"day,"]]},{"t":13.88,"w":[[13.88,"how"],[14.2,"much"],[14.36,"her"],[14.48,"smile"],[14.9,"twists"],[15.2,"your"],[15.44,"heart"],[15.66,"into"],[15.9,"the"],[16.08,"shape"],[16.26,"of"],[16.42,"her"],[16.54,"lips"],[16.72,"and"],[16.94,"the"],[17.08,"small"],[17.36,"bend"],[17.6,"of"],[17.8,"her"],[17.92,"eyes"],[18.1,"at"],[18.28,"the"],[18.4,"corners,"]]},{"t":19.38,"w":[[19.38,"how"],[19.78,"much"],[19.94,"you"],[20.04,"cherish"],[20.24,"the"],[20.46,"love"],[20.58,"she"],[20.78,"gives"],[20.96,"you"],[21.34,"and"],[21.78,"how"],[21.9,"she"],[22.06,"loves"],[22.24,"you"],[22.44,"even"],[22.64,"when"],[22.78,"you're"],[22.94,"at"],[23.04,"your"],[23.18,"worst,"]]},{"t":24.4,"w":[[24.4,"how"],[24.64,"even"],[24.84,"when"],[25.0,"she's"],[25.24,"down,"],[25.68,"she"],[25.78,"uplifts"],[26.12,"your"],[26.3,"very"],[26.54,"being,"]]},{"t":27.42,"w":[[27.42,"how"],[27.82,"she"],[27.98,"tells"],[28.16,"you"],[28.32,"about"],[28.5,"her"],[28.64,"day"],[28.84,"and"],[29.02,"remembers"],[29.26,"the"],[29.44,"foods"],[29.68,"that"],[29.84,"matter"],[29.98,"to"],[30.18,"you"],[30.3,"the"],[30.38,"most,"]]},{"t":31.44,"w":[[31.44,"how"],[31.7,"many"],[31.84,"days"],[32.04,"you"],[32.26,"pulled"],[32.42,"yourself"],[32.78,"through"],[33.06,"because"],[33.38,"you"],[33.56,"knew"],[33.68,"you"],[33.8,"had"],[33.98,"her."]]},{"t":35.44,"w":[[35.44,"Instead"],[35.8,"of"],[35.96,"that,"],[36.68,"you"],[36.8,"should"],[36.9,"focus"],[37.12,"on"],[37.34,"what"],[37.5,"makes"],[37.74,"her"],[37.9,"the"],[38.04,"easiest"],[38.4,"person"],[38.64,"to"],[39.0,"love,"]]},{"t":39.82,"w":[[39.82,"about"],[40.48,"her"],[40.7,"intelligence,"],[41.96,"how"],[42.26,"hard"],[42.5,"you"],[42.64,"see"],[42.78,"her"],[42.9,"try,"]]},{"t":43.92,"w":[[43.92,"how"],[44.28,"much"],[44.44,"passion"],[44.82,"everyone"],[45.2,"around"],[45.48,"her"],[45.64,"has"],[45.86,"for"],[46.12,"her"],[46.38,"and"],[46.78,"how"],[46.92,"effortlessly"],[47.36,"she"],[47.68,"pulls"],[47.86,"people"],[48.12,"close"],[48.38,"to"],[48.56,"her,"]]},{"t":49.36,"w":[[49.36,"how"],[49.7,"pretty"],[49.92,"she"],[50.1,"looks"],[50.26,"on"],[50.44,"a"],[50.58,"sunny"],[50.76,"day"],[51.02,"and"],[51.6,"how"],[51.74,"she"],[51.98,"herself"],[52.32,"is"],[52.58,"the"],[52.72,"sunlight"],[53.02,"on"],[53.3,"a"],[53.44,"rainy"],[53.54,"day,"]]},{"t":54.56,"w":[[54.56,"how"],[55.04,"the"],[55.16,"sound"],[55.36,"of"],[55.5,"her"],[55.6,"voice"],[55.92,"elevates"],[56.46,"even"],[56.72,"the"],[56.88,"walls"],[57.06,"lucky"],[57.4,"enough"],[57.64,"to"],[57.86,"reflect"],[58.12,"it."]]},{"t":59.08,"w":[[59.08,"You"],[59.28,"should"],[59.42,"talk"],[59.6,"about"],[59.82,"her"],[59.96,"style,"]]},{"t":60.84,"w":[[60.84,"how"],[61.14,"well"],[61.34,"her"],[61.52,"glasses"],[61.84,"compliment"],[62.28,"her"],[62.54,"already"],[62.92,"beautiful"],[63.28,"face"],[63.68,"and"]]},{"t":64.44,"w":[[64.44,"how"],[64.58,"beautiful"],[64.86,"she"],[65.12,"makes"],[65.3,"even"],[65.52,"the"],[65.66,"smallest"],[65.94,"things,"]]},{"t":67.14,"w":[[67.14,"maybe"],[67.28,"her"],[67.52,"ability"],[67.8,"to"],[68.06,"care"],[68.32,"and"],[68.6,"even"],[68.76,"love"],[69.0,"the"],[69.18,"smallest"],[69.6,"inanimate"],[70.02,"objects"],[70.48,"and"]]},{"t":71.16,"w":[[71.16,"how"],[71.44,"beyond"],[72.22,"all"],[72.46,"other"],[72.72,"things,"]]},{"t":73.8,"w":[[73.8,"Iris"],[73.98,"blesses"],[74.42,"the"],[74.54,"world"],[74.7,"just"],[75.0,"by"],[75.26,"being"],[75.44,"herself."]]},{"t":77.48,"w":[[77.48,"To"],[77.68,"my"],[77.84,"favorite"],[78.16,"flower,"],[78.94,"I"],[79.06,"love"],[79.18,"you"],[79.34,"so"],[79.58,"dearly"],[79.88,"baby."]]},{"t":80.92,"w":[[80.92,"I"],[81.18,"hope"],[81.28,"we"],[81.42,"can"],[81.54,"spend"],[81.84,"a"],[82.2,"long,"],[82.62,"long,"],[83.2,"long"],[83.52,"time"],[83.86,"together"],[84.18,"and"],[84.9,"watch"],[85.1,"each"],[85.3,"other"],[85.44,"grow"],[85.72,"old"],[86.1,"and"]]},{"t":86.86,"w":[[86.86,"when"],[87.02,"work"],[87.24,"gets"],[87.42,"hard,"],[87.98,"I"],[88.34,"hope"],[88.48,"I"],[88.62,"can"],[88.78,"come"],[88.98,"back"],[89.18,"to"],[89.34,"my"],[89.5,"home"],[89.78,"no"],[90.1,"matter"],[90.28,"where"],[90.5,"she"],[90.72,"is."]]},{"t":91.64,"w":[[91.64,"When"],[91.86,"my"],[92.04,"hairline"],[92.42,"continues"],[92.86,"to"],[93.1,"recede,"],[93.74,"I"],[94.12,"hope"],[94.26,"you'll"],[94.46,"be"],[94.54,"the"],[94.66,"one"],[94.78,"to"],[94.92,"shave"],[95.08,"me"],[95.28,"bald"],[95.54,"and"]]},{"t":96.54,"w":[[96.54,"when"],[96.66,"it's"],[96.8,"all"],[96.96,"said"],[97.14,"and"],[97.28,"done,"],[98.0,"my"],[98.18,"biggest"],[98.44,"accomplishment"],[98.96,"in"],[99.22,"life"],[99.4,"will"],[99.82,"hopefully"],[100.18,"be"],[100.46,"that"],[101.04,"I"],[101.16,"was"],[101.32,"yours."]]},{"t":102.52,"w":[[102.52,"I"],[102.58,"love"],[102.72,"you."]]}];
+
+const $ = s => document.querySelector(s);
+const audio = $('#audio'), stage = $('#stage'), capP = $('#caption p');
+const VIDEO_VOL = 0.3; let actx;
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// Build scenes
+SCENES.forEach((s, i) => {
+  const next = SCENES[i + 1] ? SCENES[i + 1].at : 104;
+  s.dur = next - s.at;
+  const el = document.createElement('div');
+  el.className = 'scene ' + (s.type === 'prints' ? 'cards-scene' : s.type === 'cards' ? 'cards-scene' : s.type);
+  el.style.setProperty('--dur', (s.dur + 1.2) + 's');
+  const img = (name, cls = '') => `<img ${cls ? `class="${cls}" ` : ''}data-src="media/${name}.jpg" alt="" decoding="async">`;
+  if (s.type === 'photo') {
+    el.style.setProperty('--focal', s.focal);
+    el.innerHTML = img(s.img, 'blurbg') + img(s.img, 'main') + (s.sun ? '<div class="sun"><div class="glow"></div><div class="rays"></div><div class="cloud c2"></div><div class="cloud c1"></div><div class="cloud c3"></div></div>' : '');
+    el.querySelector('.main').style.objectPosition = s.focal;
+  } else if (s.type === 'video') {
+    el.classList.add('photo');
+    el.innerHTML = `<video class="main" data-src="media/${s.src}.mp4" muted playsinline preload="none"></video>`;
+  } else if (s.type === 'cards' || s.type === 'prints') {
+    const n = s.imgs.length;
+    el.innerHTML = img(s.imgs[0], 'blurbg') +
+      `<div class="cards n${n} ${s.type === 'prints' ? 'prints' : ''}" style="--n:${n}">` +
+      s.imgs.map((m, k) => `<figure style="--tilt:${(s.tilts || [])[k] || 0}deg;transition-delay:${0.15 + k * 0.6}s">${img(m)}` +
+        (s.type === 'prints' ? `<figcaption>${s.dates ? `<b></b><span class="label">${s.dates[k]}</span>` : ''}</figcaption>` : '') + '</figure>').join('') +
+      '</div>';
+  } else if (s.type === 'bloom') {
+    el.innerHTML = img(s.img, 'bg') + '<div class="dim"></div><div class="flower">' + $('#iris-svg').innerHTML + '</div>';
+  }
+  stage.appendChild(el);
+  s.el = el;
+  const m = el.querySelector('.main');
+  if (m) m.addEventListener(m.tagName === 'VIDEO' ? 'loadedmetadata' : 'load', () => fit(s));
+});
+
+// Fill the screen only when the photo's shape is close to the screen's; otherwise show it whole
+function fit(s) {
+  const m = s.el.querySelector('.main'); if (!m) return;
+  const w = m.naturalWidth || m.videoWidth, h = m.naturalHeight || m.videoHeight; if (!w || !h) return;
+  const off = Math.abs(Math.log((w / h) / (innerWidth / innerHeight)));
+  s.el.classList.toggle('fit', off > 0.45);
+}
+addEventListener('resize', () => SCENES.forEach(fit));
+
+// Lazy-load media a few scenes ahead
+function load(i) {
+  const s = SCENES[i]; if (!s || s.loaded) return;
+  s.loaded = true;
+  s.el.querySelectorAll('[data-src]').forEach(m => { if (m.getAttribute('src')) return; m.src = m.dataset.src; if (m.tagName === 'VIDEO') m.load(); });
+}
+for (let i = 0; i < 4; i++) load(i);
+
+// Captions
+function renderLine(li) {
+  const L = LINES[li];
+  const sc = SCENES[sceneAt(L.t)];
+  const em = (sc && sc.em) || [];
+  capP.innerHTML = L.w.map(([t, w]) => {
+    const bare = w.replace(/[^\w']/g, '').toLowerCase();
+    const inner = em.includes(bare) ? `<em>${w}</em>` : w;
+    return `<span data-t="${t}">${inner}</span>`;
+  }).join(' ');
+  capP.classList.remove('out');
+}
+const sceneAt = t => { let i = 0; while (i + 1 < SCENES.length && SCENES[i + 1].at <= t) i++; return i; };
+const lineAt = t => { let i = -1; while (i + 1 < LINES.length && LINES[i + 1].t - 0.3 <= t) i++; return i; };
+
+// Sync loop
+let curScene = -1, curLine = -2;
+function setScene(i, t) {
+  if (i === curScene) return;
+  const prev = SCENES[curScene];
+  if (prev) { prev.el.classList.remove('on'); const v = prev.el.querySelector('video'); if (v) { vol(v, 0); setTimeout(() => { if (!v.closest('.on')) v.pause(); }, 1300); } }
+  curScene = i;
+  const s = SCENES[i];
+  for (let k = i; k < i + 4; k++) load(k);
+  s.el.classList.add('on');
+  document.body.classList.toggle('centered', s.type === 'line');
+  const v = s.el.querySelector('video');
+  if (v) { try { v.currentTime = Math.max(0, t - s.at); } catch (e) {} vol(v, VIDEO_VOL); if (!audio.paused) v.play().catch(() => {}); }
+}
+function tick() {
+  const t = audio.currentTime;
+  setScene(sceneAt(t), t);
+  const li = lineAt(t);
+  if (li !== curLine) {
+    curLine = li;
+    if (li >= 0) renderLine(li); else capP.innerHTML = '';
+  }
+  if (li >= 0) {
+    const L = LINES[li], last = L.w[L.w.length - 1][0];
+    const nextT = LINES[li + 1] ? LINES[li + 1].t : 999;
+    capP.querySelectorAll('span').forEach(sp => sp.classList.toggle('in', +sp.dataset.t - 0.08 <= t));
+    // fade out a line that's finished long before the next begins
+    capP.classList.toggle('out', t > last + 2.4 && t < nextT - 0.3);
+  }
+  const d = audio.duration || 103.5;
+  $('#fill').style.width = $('#knob').style.left = (t / d * 100) + '%';
+  $('#time').textContent = fmt(t) + ' / ' + fmt(d);
+  if (!audio.paused) requestAnimationFrame(tick);
+}
+const fmt = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+
+// Video sound: routed through Web Audio so the volume works on iPhones too, faded in and out with the scene
+function vol(v, x) { if (v._g && actx) v._g.gain.setTargetAtTime(x, actx.currentTime, 0.35); else v.volume = x; }
+function unlockVideos() {
+  if (actx !== undefined) return;
+  try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { actx = null; }
+  document.querySelectorAll('video').forEach(v => {
+    if (!v.getAttribute('src')) { v.src = v.dataset.src; v.preload = 'auto'; }
+    v.muted = false;
+    if (actx) { const g = actx.createGain(); g.gain.value = 0; actx.createMediaElementSource(v).connect(g).connect(actx.destination); v._g = g; } else v.volume = 0;
+    const p = v.play(); if (p) p.then(() => { if (!v.closest('.on')) v.pause(); }).catch(() => {});
+  });
+  if (actx) actx.resume();
+}
+
+// Controls
+function start() {
+  unlockVideos();
+  audio.currentTime = 0;
+  $('#end').classList.remove('on');
+  audio.play().then(() => {
+    $('#start').classList.add('gone');
+    document.body.classList.add('playing');
+    poke();
+  }).catch(() => {});
+}
+$('#play').onclick = start;
+$('#again').onclick = () => { curScene = -1; curLine = -2; SCENES.forEach(s => s.el.classList.remove('on')); start(); };
+audio.addEventListener('play', () => { clearTimeout(endT); $('#end').classList.remove('on'); document.body.classList.add('playing'); setIcon(); requestAnimationFrame(tick); const v = SCENES[curScene] && SCENES[curScene].el.querySelector('video'); if (v) v.play().catch(() => {}); });
+audio.addEventListener('pause', () => { setIcon(); document.querySelectorAll('video').forEach(v => v.pause()); });
+audio.addEventListener('seeked', () => { if (audio.currentTime < (audio.duration || 104) - 1) { clearTimeout(endT); $('#end').classList.remove('on'); } curLine = -2; tick(); const s = SCENES[curScene], v = s && s.el.querySelector('video'); if (v) v.currentTime = Math.max(0, audio.currentTime - s.at); });
+let endT;
+audio.addEventListener('ended', () => { endT = setTimeout(() => { $('#end').classList.add('on'); document.body.classList.remove('playing'); }, 1200); });
+function setIcon() { const p = audio.paused; $('#ico-pause').style.display = p ? 'none' : ''; $('#ico-play').style.display = p ? '' : 'none'; $('#pp').setAttribute('aria-label', p ? 'Play' : 'Pause'); poke(); }
+$('#pp').onclick = e => { e.stopPropagation(); audio.paused ? audio.play() : audio.pause(); };
+
+// Scrub
+const track = $('#track');
+function seekFrom(e) { const r = track.getBoundingClientRect(); const x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)); audio.currentTime = x * (audio.duration || 103.5); tick(); }
+track.addEventListener('pointerdown', e => { track.setPointerCapture(e.pointerId); seekFrom(e); track.onpointermove = seekFrom; });
+track.addEventListener('pointerup', () => { track.onpointermove = null; });
+track.addEventListener('keydown', e => { if (e.key === 'ArrowRight') audio.currentTime += 5; if (e.key === 'ArrowLeft') audio.currentTime -= 5; });
+
+// Auto-hide the bar; any touch, click or mouse move brings it back
+let idleT;
+function poke() { document.body.classList.remove('idle'); clearTimeout(idleT); idleT = setTimeout(() => { if (!audio.paused) document.body.classList.add('idle'); }, 3000); }
+['pointermove', 'pointerdown', 'keydown'].forEach(ev => addEventListener(ev, poke));
+addEventListener('keydown', e => { if (e.code === 'Space' && document.body.classList.contains('playing')) { e.preventDefault(); audio.paused ? audio.play() : audio.pause(); } });
+
+// The letter, for reading afterwards
+const paras = [[0, 8.0], [8.0, 35.1], [35.1, 58.8], [58.8, 77.2], [77.2, 102.3], [102.3, 999]];
+$('#letter-text').innerHTML = paras.map(([a, b]) => '<p>' + LINES.filter(l => l.t >= a && l.t < b).map(l => l.w.map(x => x[1]).join(' ')).join(' ') + '</p>').join('');
+$('#read').onclick = () => $('#letter').classList.add('on');
+$('#close').onclick = () => $('#letter').classList.remove('on');
+</script>
+</body>
+</html>

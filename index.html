@@ -65,8 +65,10 @@ button{font:inherit;color:inherit;cursor:pointer}
 .cards.n2 figure,.cards.n3 figure{max-width:calc((100% - var(--space-3)*2)/var(--n))}
 /* Prints (polaroid frames) */
 .cards.prints figure{background:var(--paper-deep);padding:10px 10px 0;border-radius:var(--radius-sm);box-shadow:0 10px 30px rgba(0,0,0,.5)}
-.cards.prints img{border-radius:var(--radius-sm);box-shadow:none;max-height:calc(var(--mh) - 56px)}
-.cards.prints figcaption{color:var(--ink);display:flex;align-items:center;justify-content:center;gap:var(--space-1);height:46px}
+.cards.prints img{border-radius:var(--radius-sm);box-shadow:none;max-height:calc(var(--mh) - 80px)}
+.cards.prints figcaption{color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:46px;padding:6px 4px 10px;text-align:center}
+.cards.prints figcaption .note{font:500 clamp(18px,2.2vw,24px)/1.1 var(--hand);color:var(--ink)}
+.cards.prints figcaption .date{display:flex;align-items:center;gap:var(--space-1)}
 .cards.prints figcaption .label{color:var(--ink-muted);font-size:14px}
 .cards.prints figcaption b{width:6px;height:6px;border-radius:var(--radius-pill);background:var(--gold)}
 @media (orientation:portrait){
@@ -248,7 +250,7 @@ const SCENES = [
   {at: 70.9,  type: 'line'},
   {at: 73.5,  type: 'photo', img: 'img-21', focal: '50% 30%'},
   {at: 77.2,  type: 'bloom', img: 'img-22'},
-  {at: 96.3,  type: 'prints', imgs: ['img-22', 'img-23'], dates: ['August 29', 'September 3'], tilts: [-2.5, 2]},
+  {at: 96.3,  type: 'prints', imgs: ['img-22', 'img-23'], dates: ['August 29', 'September 3'], notes: ['first photo together', 'first time saying i love you'], tilts: [-2.5, 2]},
   {at: 102.3, type: 'line', em: ['love']},
 ];
 // ---- The letter, word by word, timed to the recording ----
@@ -279,7 +281,7 @@ SCENES.forEach((s, i) => {
     el.innerHTML = img(s.imgs[0], 'blurbg') +
       `<div class="cards n${n} ${s.type === 'prints' ? 'prints' : ''}" style="--n:${n}">` +
       s.imgs.map((m, k) => `<figure style="--tilt:${(s.tilts || [])[k] || 0}deg;transition-delay:${0.15 + k * 0.6}s">${img(m)}` +
-        (s.type === 'prints' ? `<figcaption>${s.dates ? `<b></b><span class="label">${s.dates[k]}</span>` : ''}</figcaption>` : '') + '</figure>').join('') +
+        (s.type === 'prints' ? `<figcaption>${s.notes ? `<span class="note">${s.notes[k]}</span>` : ''}${s.dates ? `<span class="date"><b></b><span class="label">${s.dates[k]}</span></span>` : ''}</figcaption>` : '') + '</figure>').join('') +
       '</div>';
   } else if (s.type === 'bloom') {
     el.innerHTML = img(s.img, 'bg') + '<div class="dim"></div><div class="flower">' + $('#iris-svg').innerHTML + '</div>';
@@ -339,6 +341,7 @@ function setScene(i, t) {
 }
 function tick() {
   const t = audio.currentTime;
+  keepVideo(t);
   setScene(sceneAt(t), t);
   const li = lineAt(t);
   if (li !== curLine) {
@@ -362,8 +365,28 @@ const fmt = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(
 // Video sound: the videos themselves stay muted (on iPhones, a second media element making sound pauses the letter).
 // Their sound plays from a decoded copy through Web Audio instead, quietly under the voice.
 const clipBuf = {}; let clipNode = null;
+// iPhones only let a video keep playing freely once it has been started from a tap, so start each one (muted) during the Play tap
+function blessVideos() {
+  document.querySelectorAll('video').forEach(v => {
+    v.muted = true;
+    if (!v.getAttribute('src')) { v.src = v.dataset.src; v.preload = 'auto'; }
+    const p = v.play(); if (p) p.then(() => { if (!v.closest('.on')) v.pause(); }).catch(() => {});
+  });
+}
+// Watchdog: if the browser stalls or pauses the current video while the letter plays, nudge it back in sync
+let lastNudge = 0;
+function keepVideo(t) {
+  const s = SCENES[curScene], v = s && s.type === 'video' && s.el.querySelector('video');
+  if (!v || audio.paused || performance.now() - lastNudge < 500) return;
+  lastNudge = performance.now();
+  const want = t - s.at;
+  if (v.duration && want >= v.duration - 0.1) return;
+  if (Math.abs(v.currentTime - want) > 0.6) { try { v.currentTime = want; } catch (e) {} }
+  if (v.paused) v.play().catch(() => {});
+}
 function unlockVideos() {
   if (actx !== undefined) return;
+  blessVideos();
   try { actx = new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch (e) { actx = null; return; }
   const n = actx.createBufferSource(); n.buffer = actx.createBuffer(1, 1, 22050); n.connect(actx.destination); n.start(0);
   SCENES.filter(s => s.type === 'video').forEach(s =>
